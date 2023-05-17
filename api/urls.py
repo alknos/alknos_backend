@@ -1,7 +1,7 @@
 from django.urls import path
 
 from rest_framework.authtoken import views
-from .views import UserDetailAPI, RegisterUserAPI, InorganicReactionAPI,VerifyUserAPI,LoginUserAPI,PasswordResetAPI
+from .views import UserDetailAPI, RegisterUserAPI, InorganicReactionAPI,VerifyUserAPI,LoginUserAPI,PasswordResetAPI, UserExistsAPI
 
 
 urlpatterns = [
@@ -12,4 +12,5 @@ urlpatterns = [
     path('login', LoginUserAPI.as_view()),
     path('verify', VerifyUserAPI.as_view()),
     path('reset', PasswordResetAPI.as_view()),
+    path("user-exists", UserExistsAPI.as_view()),
 ]
