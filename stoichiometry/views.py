@@ -20,6 +20,8 @@ from rest_framework import generics
 from rest_framework.authtoken.models import Token
 
 from chemlib import Reaction, Galvanic_Cell
+import base64
+import io
 
 # Create your views here.
 class BalanceReactionAPI(APIView):
@@ -78,9 +80,10 @@ class GalvanicCellAPI(APIView):
         g = Galvanic_Cell(electrode1, electrode2)
         g.draw()
         galvanic_image = g.diagram
-        print(galvanic_image)
-        galvanic_bytes = galvanic_image.tobytes()
-        response = HttpResponse(content=galvanic_bytes, content_type='image/png')
-        response['Content-Disposition'] = 'attachment; filename="galvanic_cell_'+electrode1+'_'+electrode2+'.png"'
 
-        return response
+        image_buffer = io.BytesIO()
+        galvanic_image.save(image_buffer, format='png')
+        galvanic_bytes = image_buffer.getvalue()
+        galvanic_base64 = base64.b64encode(galvanic_bytes).decode('utf-8')
+
+        return Response({"base64": str(galvanic_base64)})
