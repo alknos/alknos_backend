@@ -19,9 +19,12 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics
 from rest_framework.authtoken.models import Token
 
-from chemlib import Reaction, Galvanic_Cell
+from chemlib import Reaction, Galvanic_Cell, Wave
+from chemlib import empirical_formula_by_percent_comp as efbpc
 import base64
 import io
+
+from .utils import convert_equation
 
 # Create your views here.
 class BalanceReactionAPI(APIView):
@@ -29,19 +32,16 @@ class BalanceReactionAPI(APIView):
     #permission_classes = (permissions.IsAuthenticated,)
     permission_classes = (AllowAny,)
 
-    def post(self, request, *args, **kwargs):
-        response_data = None
+    def post(self, request, *args, **kwargs):        
         reaction = Reaction.by_formula(request.data['reaction'])
         reaction.balance()
-        response_data = [str(reaction)]
-            
-        return Response({"reaction": response_data})
+        reaction_formula = convert_equation(str(reaction))
+        return Response({"reaction": str(reaction_formula)})
 
 class CalculateStoichiometryAPI(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        print(request.data)
         reaction = Reaction.by_formula(request.data['reaction'])
         stoichiometry_unit = request.data['unit']
         stoichiometry_value = int(request.data['quantity'])
@@ -54,27 +54,36 @@ class CalculateStoichiometryAPI(APIView):
         elif (stoichiometry_unit=='molecules'):
             stoichiometry_reaction = reaction.get_amounts(compound_position, molecules=stoichiometry_value)
 
+        raw_reaction = request.data['reaction']
+        raw_reaction = raw_reaction.replace("+","")
+        raw_reaction = raw_reaction.replace("-->","")
+        print(raw_reaction)
+        reaction_compounds = raw_reaction.split("  ")
+
+        for i in range(len(stoichiometry_reaction)):
+            stoichiometry_reaction[i].update({'compound': reaction_compounds[i]})
+
+        print(stoichiometry_reaction)
+
         return Response(stoichiometry_reaction)
 
-class CalculateReactantAPI(APIView):
+class LimitingReagentAPI(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        print(request.data)
         reaction = Reaction.by_formula(request.data['reaction'])
         stoichiometry_unit = request.data['unit']
         reactant2_value = float(request.data['reagent2'])
         reactant1_value = float(request.data['reagent1'])
 
-        lr=reaction.limiting_reagent(reactant1_value, reactant2_value, mode = stoichiometry_unit)
+        limiting_reagent=reaction.limiting_reagent(reactant1_value, reactant2_value, mode = stoichiometry_unit)
 
-        return Response({"limiting_reagent": str(lr)})
+        return Response({"limiting_reagent": limiting_reagent})
     
 class GalvanicCellAPI(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        print(request.data)
         electrode1 = request.data['electrode1']
         electrode2 = request.data['electrode2']
         g = Galvanic_Cell(electrode1, electrode2)
@@ -87,3 +96,37 @@ class GalvanicCellAPI(APIView):
         galvanic_base64 = base64.b64encode(galvanic_bytes).decode('utf-8')
 
         return Response({"base64": str(galvanic_base64)})
+
+class EmpiricalFormulaAPI(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        elements = request.data['elements']
+        
+        params_dict = {}
+        for element in elements:
+            params_dict[element['symbol']] = element['percentage']
+        
+        empirical_formula =  convert_equation(efbpc(**params_dict).formula)
+
+        return Response({"empirical_formula": empirical_formula})
+
+class ElectromagneticWaveAPI(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, args, **kwargs):
+        print(request.data)
+        value = float(request.data['value'])
+        prop = request.data['property']
+        power = float(request.data['power'])
+        real_value = float(value * (10 ** power))
+        if (prop == "frequency"):
+            w = Wave(frequency= real_value)
+
+        elif (prop == 'wavelength'):
+            w = Wave(wavelength=real_value)
+
+        elif (prop == 'energy'):
+            w = Wave(energy=real_value)
+
+        return Response(w.properties)
