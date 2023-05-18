@@ -57,11 +57,10 @@ class CalculateStoichiometryAPI(APIView):
         raw_reaction = request.data['reaction']
         raw_reaction = raw_reaction.replace("+","")
         raw_reaction = raw_reaction.replace("-->","")
-        print(raw_reaction)
         reaction_compounds = raw_reaction.split("  ")
 
         for i in range(len(stoichiometry_reaction)):
-            stoichiometry_reaction[i].update({'compound': reaction_compounds[i]})
+            stoichiometry_reaction[i].update({'compound': convert_equation(reaction_compounds[i])})
 
         print(stoichiometry_reaction)
 
@@ -72,11 +71,12 @@ class LimitingReagentAPI(APIView):
 
     def post(self, request, *args, **kwargs):
         reaction = Reaction.by_formula(request.data['reaction'])
+        reaction.balance()
         stoichiometry_unit = request.data['unit']
-        reactant2_value = float(request.data['reagent2'])
         reactant1_value = float(request.data['reagent1'])
+        reactant2_value = float(request.data['reagent2'])
 
-        limiting_reagent=reaction.limiting_reagent(reactant1_value, reactant2_value, mode = stoichiometry_unit)
+        limiting_reagent = convert_equation(reaction.limiting_reagent(reactant1_value, reactant2_value, mode = stoichiometry_unit).formula)
 
         return Response({"limiting_reagent": limiting_reagent})
     
@@ -107,14 +107,14 @@ class EmpiricalFormulaAPI(APIView):
         for element in elements:
             params_dict[element['symbol']] = element['percentage']
         
-        empirical_formula =  convert_equation(efbpc(**params_dict).formula)
+        empirical_formula = convert_equation(efbpc(**params_dict).formula)
 
         return Response({"empirical_formula": empirical_formula})
 
 class ElectromagneticWaveAPI(APIView):
     permission_classes = (AllowAny,)
 
-    def post(self, request, args, **kwargs):
+    def post(self, request, *args, **kwargs):
         print(request.data)
         value = float(request.data['value'])
         prop = request.data['property']
