@@ -19,12 +19,15 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework import generics
 from rest_framework.authtoken.models import Token
 
-from chemlib import Reaction, Galvanic_Cell, Wave
+from chemlib import Reaction, Galvanic_Cell, Wave, pH, electrolysis, Element, Compound
 from chemlib import empirical_formula_by_percent_comp as efbpc
 import base64
 import io
 
-from .utils import convert_equation
+import itertools
+import copy
+
+from .utils import convert_equation, oxidation_numbers
 
 # Create your views here.
 class BalanceReactionAPI(APIView):
@@ -121,12 +124,114 @@ class ElectromagneticWaveAPI(APIView):
         power = float(request.data['power'])
         real_value = float(value * (10 ** power))
         if (prop == "frequency"):
-            w = Wave(frequency= real_value)
+            wave = Wave(frequency= real_value)
 
         elif (prop == 'wavelength'):
-            w = Wave(wavelength=real_value)
+            wave = Wave(wavelength=real_value)
 
         elif (prop == 'energy'):
-            w = Wave(energy=real_value)
+            wave = Wave(energy=real_value)
 
-        return Response(w.properties)
+        return Response(wave.properties)
+
+class AcidityCalculationAPI(APIView): 
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        print(request.data)
+        prop = request.data['property']
+        value = float(request.data['value'])
+        if (prop == "pH"):
+           acidity = pH(pH = value)
+
+        elif (prop == 'pOH'):
+            acidity = pH(pOH=value)
+
+        elif (prop == 'H'):
+            power = float(request.data['power'])
+            real_value = float(value * (10 ** power))
+            acidity = pH(H=real_value)
+
+        elif (prop == 'OH'):
+            power = float(request.data['power'])
+            real_value = float(value * (10 ** power))
+            acidity = pH(OH=real_value)
+
+        return Response(acidity)
+    
+class CalculateElectrolysisAPI(APIView): 
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        compound = request.data['compound']
+        amps = None
+        seconds = None
+        grams = None
+
+        try:
+            amps = request.data['amps']
+        except:
+            pass
+
+        try:
+            seconds = float(request.data['seconds'])
+        except:
+            pass
+
+        try:
+            grams = float(request.data["grams"])
+        except:
+            pass
+
+        ##############################################################
+        occurences = Compound(compound).occurences
+
+        # Creamos una copia profunda de oxidation_numbers
+        oxidation_numbers_copy = copy.deepcopy(oxidation_numbers)
+
+        # Convertimos los valores en lista o array
+        for key, value in oxidation_numbers_copy.items():
+            if not isinstance(value, list):
+                oxidation_numbers_copy[key] = [value]
+
+        # Generamos el array
+        array = []
+        for element, occurence in occurences.items():
+            subarray = []
+            for oxidation in oxidation_numbers_copy[element]:
+                subarray.append(oxidation * occurence)
+            array.append(subarray)
+
+        compound_oxidation_numbers = dict()
+        oxidation_numbers_combination = None
+
+        # Buscamos las combinaciones que sumen cero
+        combinations = list(itertools.product(*array))
+        for combination in combinations:
+            if sum(combination) == 0:
+                oxidation_numbers_combination = combination
+                break
+
+        # Almacenamos los valores de oxidacion de los elementos en compound_oxidation_numbers
+        for index, element in enumerate(occurences):
+            compound_oxidation_numbers[element] = int(oxidation_numbers_combination[index] / occurences[element]) if occurences[element] != 0 else 0
+
+        n = 0
+        metal = None
+        for element, value in compound_oxidation_numbers.items():
+            # Evaluamos si el elemento es metal o no
+            if Element(element).properties['Metal']:
+                n = value
+                metal = element
+                break
+
+
+        if amps == None:
+            electrolysis_result = electrolysis(metal, n, grams = grams, seconds=seconds)
+        if seconds == None:
+            electrolysis_result = electrolysis(metal, n, grams = grams, amps=amps)
+        if grams == None:
+            electrolysis_result = electrolysis(metal, n, amps = amps, seconds=seconds)
+
+
+        return Response(electrolysis_result)
