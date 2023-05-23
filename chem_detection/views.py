@@ -67,14 +67,13 @@ class ChemDetectionAPI(APIView):
     def post(self, request, *args, **kwargs):
 
         def start_inference_model():
-            try:
-                print("--- Starting inference model...")
-                global img2mol_instance
-                img2mol_instance = Img2MolInference(model_ckpt="./model/model.ckpt",
-                                    local_cddd=True)
-                print("--- Model started")
-            except:
-                print("An error has ocurred")
+
+            print("--- Starting inference model...")
+            global img2mol_instance
+            img2mol_instance = Img2MolInference(model_ckpt="./model/model.ckpt",
+                                local_cddd=True)
+            print("--- Model started")
+
 
         if img2mol_instance == None:                
             thread = threading.Thread(target=start_inference_model)
