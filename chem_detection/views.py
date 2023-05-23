@@ -43,6 +43,7 @@ class ChemDetectionAPI(APIView):
     #permission_classes = (permissions.IsAuthenticated,)
     parser_classes = (MultiPartParser,)
 
+    '''
     def get(self, request, *args, **kwargs):
         
         data = "Model loading!"
@@ -61,6 +62,7 @@ class ChemDetectionAPI(APIView):
         thread.start()
 
         return Response(data)
+    '''
 
     def post(self, request, *args, **kwargs):
 
@@ -68,7 +70,7 @@ class ChemDetectionAPI(APIView):
             try:
                 print("--- Starting inference model...")
                 global img2mol_instance
-                img2mol_instance = Img2MolInference(model_ckpt="../../model/model.ckpt",
+                img2mol_instance = Img2MolInference(model_ckpt="./model/model.ckpt",
                                     local_cddd=True)
                 print("--- Model started")
             except:
@@ -123,18 +125,7 @@ class ChemDetectionAPI(APIView):
         possible_common_names = []
 
         possible_common_names.append(compound.synonyms[:3])
-
-        mol2_path = os.path.join(settings.MEDIA_ROOT + "/file.mol2")
-
-        if os.path.exists(mol2_path):
-            os.remove(mol2_path)  
-
-        print("--- Writing file.mol2")
-
-        with open(mol2_path, 'wb') as infile:
-            mol2 = cirpy.resolve(smiles, 'mol2')
-            infile.write(bytes(mol2, 'utf-8'))
-            infile.close()
+        print(" => ", possible_common_names)
 
         print("--- Finished")
 
