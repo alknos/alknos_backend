@@ -34,6 +34,7 @@ from rest_framework.authtoken.models import Token
 img2mol_instance = None
 smiles = None
 
+
 cont = 1
 
 # Create your views here.
@@ -62,6 +63,21 @@ class ChemDetectionAPI(APIView):
         return Response(data)
 
     def post(self, request, *args, **kwargs):
+
+        def start_inference_model():
+            try:
+                print("--- Starting inference model...")
+                global img2mol_instance
+                img2mol_instance = Img2MolInference(model_ckpt="../../model/model.ckpt",
+                                    local_cddd=True)
+                print("--- Model started")
+            except:
+                print("An error has ocurred")
+
+        if img2mol_instance == None:                
+            thread = threading.Thread(target=start_inference_model)
+            thread.start()
+            thread.join()
 
         global cont
         cont += 1
@@ -106,7 +122,6 @@ class ChemDetectionAPI(APIView):
         print("--- Getting possible common names")
         possible_common_names = []
 
-       
         possible_common_names.append(compound.synonyms[:3])
 
         mol2_path = os.path.join(settings.MEDIA_ROOT + "/file.mol2")
