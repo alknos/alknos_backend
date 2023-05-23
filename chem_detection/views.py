@@ -86,8 +86,6 @@ class ChemDetectionAPI(APIView):
         file_base64 = request.data['base64']
         file_base64 = re.sub(r'^.*?base64,', '', file_base64)
 
-        print(file_base64)
-
         path = str(cont) + ".png"
 
         decoded_data = base64.b64decode(file_base64)
