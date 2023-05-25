@@ -76,7 +76,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             uidb64_bytes = base64.b64encode(uid_bytes)
             uidb64 = uidb64_bytes.decode('ascii')#.strip("=")
 
-            content = "http://localhost:3000/verify?token=" + uidb64.replace("=","%3D") + "%2F" + token
+            content = "http://macsafe.gerdoc.com/verify?token=" + uidb64.replace("=","%3D") + "%2F" + token
 
             email.set_content(content)
 

@@ -139,10 +139,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-EMAIL_HOST = 'smtp-mail.outlook.com'
+EMAIL_HOST = 'smtp.gmail.com'
 
-EMAIL_HOST_USER = 'alknos.verification@outlook.com'
+EMAIL_HOST_USER = 'tecno.akar.soporte@gmail.com'
 
-EMAIL_HOST_PASSWORD = '2794f6ee62c43d5fd35b27fa313ad67ef9b73046d4d000a4b59b791acb098a87'
+EMAIL_HOST_PASSWORD = 'fgkebykjmmafajmu'
 
 EMAIL_PORT = 587
